@@ -11,6 +11,9 @@ public class EnemyAi : MonoBehaviour
     public LayerMask whatIsGround, whatIsPlayer;
     public float health;
     public Vector3 turnDirection;
+    [SerializeField] private bool playerBehindWall;
+    [SerializeField] private Vector3 lastKnownPlayerPosition;
+    [SerializeField] private bool hasSeenPlayer = false;
 
     //Patroling
     public Vector3 walkPoint;
@@ -26,27 +29,49 @@ public class EnemyAi : MonoBehaviour
     public float sightRange, attackRange;
     public bool playerInSightRange, playerInAttackRange;
 
-    private void Awake()
+    [SerializeField] private Transform patrolPointA;
+    [SerializeField] private Transform patrolPointB;
+    [SerializeField] private bool isPatroling = false;
+    [SerializeField] private int currentPatrolTarget = 1;
 
+    private void Awake()
     {
+        currentPatrolTarget = 1;
         player = GameObject.Find("PlayerArmature").transform;
         agent = GetComponent<NavMeshAgent>();
+        InvokeRepeating("PlayerBehindWallCheck", 0.5f, 0.5f);
     }
 
     private void Update()
-
     {
-        //Check for sight and attack range
+        StateCheck();
+    }
+    public void StateCheck()
+    {
         playerInSightRange = Physics.CheckSphere(transform.position, sightRange, whatIsPlayer);
         playerInAttackRange = Physics.CheckSphere(transform.position, attackRange, whatIsPlayer);
 
-        if (!playerInSightRange && !playerInAttackRange) Patroling();
-        if (playerInSightRange && !playerInAttackRange) ChasePlayer();
-        if (playerInAttackRange && playerInSightRange) AttackPlayer();
+        if (!playerInSightRange && !playerInAttackRange && !isPatroling) RunAround();
+        if (!playerInSightRange && !playerInAttackRange && isPatroling) Patrol();
+        if (playerInSightRange && !playerInAttackRange && playerBehindWall && !isPatroling) RunAround();
+        if (playerInSightRange && playerInAttackRange && playerBehindWall && isPatroling) Patrol();
+        if (playerInSightRange && !playerInAttackRange && !playerBehindWall) ChasePlayer();
+        if (playerInAttackRange && playerInSightRange && !playerBehindWall) AttackPlayer();
 
     }
-
-    private void Patroling()
+    public void CheckLastKnownPlayerPosition()
+    {
+        if(lastKnownPlayerPosition != null)
+        {
+            Vector3 distanceToLastKnownPlayerLocation = transform.position - lastKnownPlayerPosition;
+            agent.SetDestination(lastKnownPlayerPosition);
+            if(distanceToLastKnownPlayerLocation.magnitude < 1.3f)
+            {
+                hasSeenPlayer = false;
+            }
+        }
+    }
+    private void RunAround()
 
     {
         if (!walkPointSet) SearchWalkPoint();
@@ -58,11 +83,12 @@ public class EnemyAi : MonoBehaviour
         //Walkpoint reached
         if (distanceToWalkPoint.magnitude < 1f)
             walkPointSet = false;
-
+        if(hasSeenPlayer == true)
+        {
+            CheckLastKnownPlayerPosition();
+        }
     }
-
     private void SearchWalkPoint()
-
     {
         //Calculate random point in range
         float randomZ = Random.Range(-walkPointRange, walkPointRange);
@@ -73,21 +99,18 @@ public class EnemyAi : MonoBehaviour
         if (Physics.Raycast(walkPoint, -transform.up, 2f, whatIsGround))
             walkPointSet = true;
     }
-
-
-
     private void ChasePlayer()
 
     {
         agent.SetDestination(player.position);
+        lastKnownPlayerPosition = player.transform.position;
+        hasSeenPlayer = true;
     }
-
-
-
     private void AttackPlayer()
-
     {
-        turnTowardsPlayer();
+        lastKnownPlayerPosition = player.transform.position;
+        hasSeenPlayer = true;
+        TurnTowardsPlayer();
         //Make sure enemy doesn't move
         agent.SetDestination(transform.position);
 
@@ -105,39 +128,71 @@ public class EnemyAi : MonoBehaviour
         //  Invoke(nameof(ResetAttack), timeBetweenAttacks);
         //}
     }
-    private void turnTowardsPlayer()
+    private void TurnTowardsPlayer()
     {
         turnDirection = player.position - transform.position;
         turnDirection.y = 0;
         turnDirection.Normalize();
-        //Debug.Log(turnDirection);
         transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(turnDirection), 1f);
     }
-
-    private void ResetAttack()
-
+    private void Patrol()
     {
-        alreadyAttacked = false;
+
+        Vector3 DestinationA = new Vector3(patrolPointA.position.x, transform.position.y, patrolPointA.position.z);
+        Vector3 DestinationB = new Vector3(patrolPointB.position.x, transform.position.y, patrolPointB.position.z);
+        Vector3 distanceToPatrolpointA = transform.position - DestinationA;
+        Vector3 distanceToPatrolpointB = transform.position - DestinationB;
+        if (currentPatrolTarget == 1)
+        {
+            agent.SetDestination(DestinationA);
+            if (distanceToPatrolpointA.magnitude < 1.3f)
+            {
+                ChoosePatrolTarget();
+            }
+        }
+        else
+        if (currentPatrolTarget == 2)
+        {
+            agent.SetDestination(DestinationB);
+            if (distanceToPatrolpointB.magnitude < 1.3f)
+            {
+                ChoosePatrolTarget();
+            }
+        }
+        if (hasSeenPlayer == true)
+        {
+            CheckLastKnownPlayerPosition();
+        }
     }
-
-
-
-    public void TakeDamage(int damage)
-
+    public void ChoosePatrolTarget()
     {
-        health -= damage;
-
-        if (health <= 0) Invoke(nameof(DestroyEnemy), 0.5f);
+        if (currentPatrolTarget == 1)
+        {
+            currentPatrolTarget = 2;
+        }
+        else
+        if (currentPatrolTarget == 2)
+        {
+            currentPatrolTarget = 1;
+        }
     }
-
-    private void DestroyEnemy()
-
+    public void PlayerBehindWallCheck()
     {
-        Destroy(gameObject);
+        Vector3 RayDirection = new Vector3(player.transform.position.x - transform.position.x, player.transform.position.y - transform.position.y + 1, player.transform.position.z - transform.position.z);
+        if (Physics.Raycast(transform.position, RayDirection, out RaycastHit hitInfo, 999f))
+        {
+            if (hitInfo.transform.tag == "Player")
+            {
+                //Debug.DrawRay(transform.position, RayDirection, Color.green, 99f);
+                playerBehindWall = false;
+            }
+            else
+            {
+                //Debug.DrawRay(transform.position, RayDirection, Color.red, 99f);
+                playerBehindWall = true;
+            }
+        }
     }
-
-
-
     private void OnDrawGizmosSelected()
 
     {
