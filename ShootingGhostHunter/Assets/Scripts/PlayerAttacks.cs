@@ -89,7 +89,10 @@ public class PlayerAttacks : MonoBehaviour
         switch (attackType)
         {
             case (1):
+                if(tag != "Room" && tag != "Attack")
+                {
                 Destroy(gameObject);
+                }
                 if (tag == "Enemy")
                 {
                     Instantiate(vfxHitRed, lastPosition, Quaternion.identity);

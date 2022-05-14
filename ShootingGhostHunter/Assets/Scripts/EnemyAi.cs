@@ -7,12 +7,12 @@ public class EnemyAi : MonoBehaviour
 {
     public float enemyMaxHealth = 5; 
     public float enemyHealth = 1;
-    //1 = yellow, 2 = red, 3 = green, 4 = blue,
+    //1 = sword(yellow), 2 = Archer (green), 3 = Tank (red), 4 = Mage (blue),
     public int numberEnemyClass;
     //Movment/AI variables
     [SerializeField] private NavMeshAgent agent;
     [SerializeField] private Transform player;
-    [SerializeField] private LayerMask whatIsGround, whatIsPlayer;
+    [SerializeField] private LayerMask whatIsGround, whatIsPlayer, whatIsEnemy;
     private Vector3 turnDirection;
     [SerializeField] private bool playerBehindWall;
     [SerializeField] private Vector3 lastKnownPlayerPosition;
@@ -27,9 +27,16 @@ public class EnemyAi : MonoBehaviour
     [SerializeField] private float walkPointRange;
 
     //Attacking
-    //public float timeBetweenAttacks;
-    //bool alreadyAttacked;
-    //public GameObject projectile;
+    [SerializeField] private Transform AttackSpawn;
+    [SerializeField] private Transform pfSwordAttack;
+    [SerializeField] private Transform pfArcherAttack;
+    [SerializeField] private Transform pfTankAttack;
+    [SerializeField] private Transform pfMageAttack;
+    [SerializeField] private float swordTimeBetweenAttacks;
+    [SerializeField] private float archerTimeBetweenAttacks;
+    [SerializeField] private float tankTimeBetweenAttacks;
+    [SerializeField] private float mageTimeBetweenAttacks;
+    [SerializeField] private bool alreadyAttacked;
 
     //States
     public float sightRange, attackRange;
@@ -56,31 +63,49 @@ public class EnemyAi : MonoBehaviour
     {
         DeathCheck();
         StateCheck();
-        //LowHealthColorChange();
     }
     public void StateCheck()
     {
         playerInSightRange = Physics.CheckSphere(transform.position, sightRange, whatIsPlayer);
         playerInAttackRange = Physics.CheckSphere(transform.position, attackRange, whatIsPlayer);
 
-        if (!playerInSightRange && !playerInAttackRange && !isPatroling) RunAround();
-        if (!playerInSightRange && !playerInAttackRange && isPatroling) Patrol();
-        if (playerInSightRange && !playerInAttackRange && playerBehindWall && !isPatroling) RunAround();
-        if (playerInSightRange && playerInAttackRange && playerBehindWall && isPatroling) Patrol();
-        if (playerInSightRange && !playerInAttackRange && !playerBehindWall) ChasePlayer();
-        if (playerInAttackRange && playerInSightRange && !playerBehindWall) AttackPlayer();
-
+        if (!playerBehindWall)
+        {
+            if (!playerInSightRange && !playerInAttackRange) CheckLastKnownPlayerPosition();
+            if (playerInSightRange && !playerInAttackRange) ChasePlayer();
+            if (playerInAttackRange && playerInSightRange) AttackPlayer();
+        }
+        else
+        {
+            CheckLastKnownPlayerPosition();
+        }
+    }
+    public void IdleBehaviour()
+    {
+        if (isPatroling) 
+        { 
+            Patrol();
+        }
+        else
+        {
+            RunAround();
+        }
+        
     }
     public void CheckLastKnownPlayerPosition()
     {
-        if(lastKnownPlayerPosition != null)
+        if (hasSeenPlayer == true)
         {
             Vector3 distanceToLastKnownPlayerLocation = transform.position - lastKnownPlayerPosition;
             agent.SetDestination(lastKnownPlayerPosition);
-            if(distanceToLastKnownPlayerLocation.magnitude < 1.3f)
+            if (distanceToLastKnownPlayerLocation.magnitude < 1.3f)
             {
                 hasSeenPlayer = false;
             }
+        }
+        else
+        {
+            IdleBehaviour();
         }
     }
     private void RunAround()
@@ -95,10 +120,6 @@ public class EnemyAi : MonoBehaviour
         //Walkpoint reached
         if (distanceToWalkPoint.magnitude < 1f)
             walkPointSet = false;
-        if(hasSeenPlayer == true)
-        {
-            CheckLastKnownPlayerPosition();
-        }
     }
     private void SearchWalkPoint()
     {
@@ -125,20 +146,24 @@ public class EnemyAi : MonoBehaviour
         TurnTowardsPlayer();
         //Make sure enemy doesn't move
         agent.SetDestination(transform.position);
-
-        //transform.LookAt(player);
-
-        //if (!alreadyAttacked)
-        // {
-        ///Attack code here
-        //   Rigidbody rb = Instantiate(projectile, transform.position, Quaternion.identity).GetComponent<Rigidbody>();
-        // rb.AddForce(transform.forward * 32f, ForceMode.Impulse);
-        //  rb.AddForce(transform.up * 8f, ForceMode.Impulse);
-        ///End of attack code
-
-        //  alreadyAttacked = true;
-        //  Invoke(nameof(ResetAttack), timeBetweenAttacks);
-        //}
+        if (!alreadyAttacked) 
+        {
+            switch (numberEnemyClass)
+            {
+                case (1):
+                    AttackSword();
+                    break;
+                case (2):
+                    AttackArcher();
+                    break;
+                case (3):
+                    AttackTank();
+                    break;
+                case (4):
+                    AttackMage();
+                    break;
+            }
+        }
     }
     private void TurnTowardsPlayer()
     {
@@ -154,7 +179,7 @@ public class EnemyAi : MonoBehaviour
         Vector3 DestinationB = new Vector3(patrolPointB.position.x, transform.position.y, patrolPointB.position.z);
         Vector3 distanceToPatrolpointA = transform.position - DestinationA;
         Vector3 distanceToPatrolpointB = transform.position - DestinationB;
-        if (currentPatrolTarget == 1)
+        if (currentPatrolTarget == 1 && !playerInSightRange)
         {
             agent.SetDestination(DestinationA);
             if (distanceToPatrolpointA.magnitude < 1.3f)
@@ -163,17 +188,13 @@ public class EnemyAi : MonoBehaviour
             }
         }
         else
-        if (currentPatrolTarget == 2)
+        if (currentPatrolTarget == 2 && !playerInSightRange)
         {
             agent.SetDestination(DestinationB);
             if (distanceToPatrolpointB.magnitude < 1.3f)
             {
                 ChoosePatrolTarget();
             }
-        }
-        if (hasSeenPlayer == true)
-        {
-            CheckLastKnownPlayerPosition();
         }
     }
     public void ChoosePatrolTarget()
@@ -220,27 +241,59 @@ public class EnemyAi : MonoBehaviour
                 Instantiate(pfHealthOrb, transform.position, Quaternion.identity);
             }
             Destroy(gameObject);
+            GetComponentInParent<EnemySpawner>().EnemyKilled();
         }
     }
 
     private void DeterminEnemyClass()
     {
-        numberEnemyClass = Random.Range(1, 5);
-        switch (numberEnemyClass)
+        if (numberEnemyClass != 1 && numberEnemyClass != 2 && numberEnemyClass != 3 && numberEnemyClass != 4)
         {
-            case (1):
-                gameObject.GetComponent<Renderer>().material.color = Color.yellow;
-            break;
-            case (2):
-                gameObject.GetComponent<Renderer>().material.color = Color.red;
-            break;
-            case (3):
-                gameObject.GetComponent<Renderer>().material.color = Color.green;
-            break;
-            case (4):
-                gameObject.GetComponent<Renderer>().material.color = Color.blue;
-            break;
+            float rand = Random.value;
+            if(rand <= 0.25)
+            {
+                numberEnemyClass = 1;
+            }
+            else if (rand <= 0.5 && rand > 0.25)
+            {
+                numberEnemyClass = 2;
+            }
+            else if (rand <= 0.75 && rand > 0.5)
+            {
+                numberEnemyClass = 3;
+            }
+            else if (rand > 0.75)
+            {
+                numberEnemyClass = 4;
+            }
         }
+            switch (numberEnemyClass)
+            {
+                case (1):
+                    gameObject.GetComponent<Renderer>().material.color = Color.yellow;
+                    swordTimeBetweenAttacks = 5;
+                    attackRange = 3;
+                    sightRange = 6;
+                    break;
+                case (2):
+                    gameObject.GetComponent<Renderer>().material.color = Color.green;
+                    archerTimeBetweenAttacks = 5;
+                    attackRange = 5;
+                    sightRange = 12;
+                    break;
+                case (3):
+                    gameObject.GetComponent<Renderer>().material.color = Color.red;
+                    tankTimeBetweenAttacks = 5;
+                    attackRange = 2;
+                    sightRange = 6;
+                    break;
+                case (4):
+                    gameObject.GetComponent<Renderer>().material.color = Color.blue;
+                    mageTimeBetweenAttacks = 5;
+                    attackRange = 6;
+                    sightRange = 10;
+                    break;
+            }
     }
 
     private void OnDrawGizmosSelected()
@@ -253,5 +306,36 @@ public class EnemyAi : MonoBehaviour
         Gizmos.color = Color.yellow;
 
         Gizmos.DrawWireSphere(transform.position, sightRange);
+    }
+
+    private void AttackSword()
+    {
+        Instantiate(pfSwordAttack, AttackSpawn.position, Quaternion.identity);
+        alreadyAttacked = true;
+        Invoke("ResetAttack", swordTimeBetweenAttacks);
+    }
+
+    private void AttackArcher()
+    {
+        Instantiate(pfArcherAttack, AttackSpawn.position, Quaternion.identity);
+        alreadyAttacked = true;
+        Invoke("ResetAttack", archerTimeBetweenAttacks);
+    }
+    private void AttackTank()
+    {
+        Instantiate(pfTankAttack, AttackSpawn.position, Quaternion.identity);
+        alreadyAttacked = true;
+        Invoke("ResetAttack", tankTimeBetweenAttacks);
+    }
+    private void AttackMage()
+    {
+        Instantiate(pfMageAttack, AttackSpawn.position, Quaternion.identity);
+        alreadyAttacked = true;
+        Invoke("ResetAttack", mageTimeBetweenAttacks);
+    }
+    private void ResetAttack()
+    {
+        CancelInvoke("ResetAttack");
+        alreadyAttacked = false;
     }
 }

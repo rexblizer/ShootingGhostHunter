@@ -8,6 +8,8 @@ TagManager:
   - Enemy
   - Ammo
   - Health
+  - Attack
+  - Room
   layers:
   - Default
   - TransparentFX

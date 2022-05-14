@@ -130,4 +130,10 @@ MonoBehaviour:
   whatIsPlayer:
     serializedVersion: 2
     m_Bits: 128
+  pickUpTime: 0.3
+  ammoPlayerinPickUpRange: 0
   ammoPickUpRange: 1
+  ammoPickUpSpeed: 3
+  healthPlayerinPickUpRange: 0
+  healthPickUpRange: 0
+  healthPickUpSpeed: 0

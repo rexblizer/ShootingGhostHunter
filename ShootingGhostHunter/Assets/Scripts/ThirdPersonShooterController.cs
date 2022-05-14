@@ -30,6 +30,7 @@ public class ThirdPersonShooterController : MonoBehaviour
     [SerializeField] private int maxHealth = 100;
     [SerializeField] private int healthIncreasePerOrb = 10;
     [SerializeField] private TMP_Text healthCounter;
+    [SerializeField] private UiController uiController;
 
     //cooldowns für angriffe
     [SerializeField] private bool rangedBasicAvailable = true;
@@ -39,21 +40,23 @@ public class ThirdPersonShooterController : MonoBehaviour
 
     [SerializeField] private float rangedBasicCooldown = 0.5f;
     [SerializeField] private float meleeBasicCooldown = 1f;
-    [SerializeField] private float meleeUltCooldown = 5f;
-    [SerializeField] private float rangedUltCooldown = 5f;
+    private float meleeUltCooldown = 15f;
+    private float rangedUltCooldown = 2f;
 
     //private ThirdPersonController thirdPersonController;
     private StarterAssetsInputs starterAssetsInputs;
 
     private void Awake()
     {
+        uiController.SetHealthBarMaxHealth(maxHealth);
         //thirdPersonController = GetComponent<ThirdPersonController>();
         starterAssetsInputs = GetComponent<StarterAssetsInputs>();
     }
     void Update()
     {
-        ammoCounter.text = "Ammo: " + ammoRemaining;
-        healthCounter.text = "Leben: " + healthRemaining + "/" + maxHealth;
+        ammoCounter.text = ammoRemaining.ToString();
+        healthCounter.text = healthRemaining.ToString();
+        uiController.SetHealthBar(healthRemaining);
         Vector2 screenCenterPoint = new Vector2(Screen.width / 2f, Screen.height / 2f);
         Ray ray = Camera.main.ScreenPointToRay(screenCenterPoint);
 
@@ -63,40 +66,55 @@ public class ThirdPersonShooterController : MonoBehaviour
             debugTransform.position = mouseWorldPosition;
         }
 
-        if (starterAssetsInputs.shoot && rangedBasicAvailable && ammoRemaining > 0)
+        if (starterAssetsInputs.shoot)
         {
-            ammoRemaining = ammoRemaining - 1;
             starterAssetsInputs.shoot = false;
-            rangedBasicAvailable = false;
-            pfRangedBasic.GetComponent<PlayerAttacks>().Setup(mouseWorldPosition);
-            Vector3 aimDir = (mouseWorldPosition - spawnBulletPosition.position).normalized;
-            Instantiate(pfRangedBasic, spawnBulletPosition.position, Quaternion.LookRotation(aimDir, Vector3.up));
-            Invoke("RangedBasicReset", rangedBasicCooldown);
+
+            if (rangedBasicAvailable && ammoRemaining > 0)
+            {
+                ammoRemaining = ammoRemaining - 1;
+                rangedBasicAvailable = false;
+                pfRangedBasic.GetComponent<PlayerAttacks>().Setup(mouseWorldPosition);
+                Vector3 aimDir = (mouseWorldPosition - spawnBulletPosition.position).normalized;
+                Instantiate(pfRangedBasic, spawnBulletPosition.position, Quaternion.LookRotation(aimDir, Vector3.up));
+                Invoke("RangedBasicReset", rangedBasicCooldown);
+            }
         }
-        if (starterAssetsInputs.melee && meleeBasicAvailable)
+        if (starterAssetsInputs.melee)
         {
             starterAssetsInputs.melee = false;
-            meleeBasicAvailable = false;
-            Vector3 aimDir = (mouseWorldPosition - spawnMeleePosition.position).normalized;
-            Instantiate(pfMeleeBasic, spawnMeleePosition.position, Quaternion.LookRotation(aimDir, Vector3.up));
-            Invoke("MeleeBasicReset", meleeBasicCooldown);
+            if (meleeBasicAvailable)
+            {
+                meleeBasicAvailable = false;
+                Vector3 aimDir = (mouseWorldPosition - spawnMeleePosition.position).normalized;
+                Instantiate(pfMeleeBasic, spawnMeleePosition.position, Quaternion.LookRotation(aimDir, Vector3.up));
+                Invoke("MeleeBasicReset", meleeBasicCooldown);
+            }
         }
-        if (starterAssetsInputs.meleeUlt && meleeUltAvailable)
+        if (starterAssetsInputs.meleeUlt)
         {
             starterAssetsInputs.meleeUlt = false;
-            meleeUltAvailable = false;
-            Vector3 meleeUltSpawnPosition = new Vector3(gameObject.transform.position.x, gameObject.transform.position.y + 1, gameObject.transform.position.z);
-            Instantiate(pfMeleeUlt, meleeUltSpawnPosition, Quaternion.identity);
-            Invoke("MeleeUltReset", meleeUltCooldown);
+            if (meleeUltAvailable)
+            {
+                meleeUltAvailable = false;
+                uiController.StartMeleeUltCD(meleeUltCooldown);
+                Vector3 meleeUltSpawnPosition = new Vector3(gameObject.transform.position.x, gameObject.transform.position.y + 1, gameObject.transform.position.z);
+                Instantiate(pfMeleeUlt, meleeUltSpawnPosition, Quaternion.identity);
+                Invoke("MeleeUltReset", meleeUltCooldown);
+            }
         }
-        if (starterAssetsInputs.shootUlt && rangedUltAvailable)
+        if (starterAssetsInputs.shootUlt)
         {
             starterAssetsInputs.shootUlt = false;
-            rangedUltAvailable = false;
-            LookAtMouseWorldPosition();
-            pfRangedUlt.GetComponent<PlayerAttacks>().Setup(mouseWorldPosition);
-            Instantiate(pfRangedUlt, spawnRangedUltPosition.position, Quaternion.identity);
-            Invoke("RangedUltReset", rangedUltCooldown);
+            if (rangedUltAvailable)
+            {
+                rangedUltAvailable = false;
+                uiController.StartRangedUltCD(rangedUltCooldown);
+                LookAtMouseWorldPosition();
+                pfRangedUlt.GetComponent<PlayerAttacks>().Setup(mouseWorldPosition);
+                Instantiate(pfRangedUlt, spawnRangedUltPosition.position, Quaternion.identity);
+                Invoke("RangedUltReset", rangedUltCooldown);
+            }
         }
     }
     private void LookAtMouseWorldPosition()
@@ -137,5 +155,9 @@ public class ThirdPersonShooterController : MonoBehaviour
         {
             healthRemaining = maxHealth;
         }
+    }
+    public void HealthDecrease(int Amount)
+    {
+        healthRemaining = healthRemaining - Amount;
     }
 }

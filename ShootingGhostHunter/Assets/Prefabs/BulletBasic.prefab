@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 7630461879706404819}
   m_Layer: 9
   m_Name: BulletBasic
-  m_TagString: Untagged
+  m_TagString: Attack
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -112,16 +112,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   attackType: 1
-  targetPosition: {x: -85.765236, y: 2.1720288e-18, z: -21.186865}
+  targetPosition: {x: -75, y: 0.88535047, z: -21.369587}
+  player: {fileID: 0}
   vfxHitRed: {fileID: 6127303160988738261, guid: 72b9458041e987842a8dcfb7040bf292,
     type: 3}
   vfxHitGreen: {fileID: 6127303160988738261, guid: b6f88fa933237df4f8ccf33e8f72ce4c,
     type: 3}
   moveSpeed: 50
   lastPosition: {x: 0, y: 0, z: 0}
-  bulletDamage: 1
-  existingTime: 0.5
+  rangedDamage: 1
+  rangedUltDamage: 4
+  rangedUltAttackTime: 2.5
+  meleeAttackTime: 0.5
+  meleeUltAttackTime: 1
   meleeDamage: 2
+  meleeUltDamage: 4
 --- !u!54 &7630461879706404819
 Rigidbody:
   m_ObjectHideFlags: 0
