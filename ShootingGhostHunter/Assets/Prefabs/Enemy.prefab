@@ -186,6 +186,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyMaxHealth: 5
   enemyHealth: 0
+  spawnedFromSpawner: 1
+  isMiniBoss: 0
   numberEnemyClass: 5
   agent: {fileID: 8884948795340728717}
   player: {fileID: 0}
@@ -226,7 +228,7 @@ MonoBehaviour:
   playerInAttackRange: 0
   patrolPointA: {fileID: 0}
   patrolPointB: {fileID: 0}
-  isPatroling: 1
+  isPatroling: 0
   currentPatrolTarget: 1
 --- !u!1 &8884948795763916332
 GameObject:

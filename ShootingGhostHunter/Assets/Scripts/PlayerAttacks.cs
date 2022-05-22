@@ -84,7 +84,7 @@ public class PlayerAttacks : MonoBehaviour
     //Interactions of the attack
     private void OnTriggerEnter(Collider col)
     {
-        Vector3 pushDirection = (col.transform.position - player.transform.position);
+        Vector3 pushDirection = (col.transform.position - player.transform.position).normalized;
         string tag = col.tag;
         switch (attackType)
         {
@@ -96,8 +96,7 @@ public class PlayerAttacks : MonoBehaviour
                 if (tag == "Enemy")
                 {
                     Instantiate(vfxHitRed, lastPosition, Quaternion.identity);
-                    col.gameObject.GetComponent<Rigidbody>().AddForce(pushDirection * 1.5f, ForceMode.Impulse);
-                    Debug.Log("Enemy hit");
+                    col.gameObject.GetComponent<Rigidbody>().AddForce(pushDirection * 2f, ForceMode.Impulse);
                     col.GetComponent<EnemyAi>().enemyHealth = col.GetComponent<EnemyAi>().enemyHealth - rangedDamage;
                 }
                 break;
@@ -105,16 +104,14 @@ public class PlayerAttacks : MonoBehaviour
                 if (tag == "Enemy")
                 {
                     col.GetComponent<EnemyAi>().enemyHealth = col.GetComponent<EnemyAi>().enemyHealth - meleeDamage;
-                    col.gameObject.GetComponent<Rigidbody>().AddForce(pushDirection * 2, ForceMode.Impulse);
-                    Debug.Log("Gegner Geschlagen");
+                    col.gameObject.GetComponent<Rigidbody>().AddForce(pushDirection * 3, ForceMode.Impulse);
                 }
                 break;
             case (3):
                 if (tag == "Enemy")
                 {
                     col.GetComponent<EnemyAi>().enemyHealth = col.GetComponent<EnemyAi>().enemyHealth - meleeUltDamage;
-                    col.gameObject.GetComponent<Rigidbody>().AddForce(pushDirection * 4, ForceMode.Impulse);
-                    Debug.Log("Melee Ult Hit");
+                    col.gameObject.GetComponent<Rigidbody>().AddForce(pushDirection * 6, ForceMode.Impulse);
                 }
                 break;
             case (4):
@@ -122,7 +119,6 @@ public class PlayerAttacks : MonoBehaviour
                 {
                     col.GetComponent<EnemyAi>().enemyHealth = col.GetComponent<EnemyAi>().enemyHealth - rangedUltDamage;
                     col.gameObject.GetComponent<Rigidbody>().AddForce(pushDirection * 2, ForceMode.Impulse);
-                    Debug.Log("Range Ult Hit");
                 }
                 break;
         }

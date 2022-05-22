@@ -40,8 +40,8 @@ public class ThirdPersonShooterController : MonoBehaviour
 
     [SerializeField] private float rangedBasicCooldown = 0.5f;
     [SerializeField] private float meleeBasicCooldown = 1f;
-    private float meleeUltCooldown = 15f;
-    private float rangedUltCooldown = 2f;
+    [SerializeField] private float meleeUltCooldown = 15f;
+    [SerializeField] private float rangedUltCooldown = 2f;
 
     //private ThirdPersonController thirdPersonController;
     private StarterAssetsInputs starterAssetsInputs;

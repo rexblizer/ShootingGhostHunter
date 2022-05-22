@@ -118,13 +118,13 @@ MonoBehaviour:
   archerAttackDamage: 0
   tankAttackDuration: 0
   tankAttackDamage: 0
-  mageMoveSpeedAttack: 1
-  mageAttackDuration: 4
+  mageMoveSpeedAttack: 5
+  mageAttackDuration: 2
   whatIsPlayer:
     serializedVersion: 2
     m_Bits: 128
   mageAttackExplosionRange: 1
-  mageAttackDamage: 7
+  mageAttackDamage: 12
 --- !u!54 &1311226525516344641
 Rigidbody:
   m_ObjectHideFlags: 0

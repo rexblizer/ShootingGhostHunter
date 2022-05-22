@@ -116,7 +116,7 @@ MonoBehaviour:
   swordAttackDuration: 0
   swordAttackDamage: 0
   archerMoveSpeedAttack: 4
-  archerAttackDamage: 4
+  archerAttackDamage: 10
   tankAttackDuration: 0
   tankAttackDamage: 0
   mageMoveSpeedAttack: 0

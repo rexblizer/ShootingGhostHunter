@@ -129,7 +129,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   attackType: 4
-  targetPosition: {x: -95.01176, y: 3.2221835, z: -31.500004}
+  targetPosition: {x: -34.869194, y: 0.7534765, z: -74}
   player: {fileID: 0}
   vfxHitRed: {fileID: 6127303160988738261, guid: 72b9458041e987842a8dcfb7040bf292,
     type: 3}

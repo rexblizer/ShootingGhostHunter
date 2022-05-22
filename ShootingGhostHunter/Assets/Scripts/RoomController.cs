@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class RoomController : MonoBehaviour
 {
-    private bool roomActive;
+    private bool roomCleared;
     [SerializeField] private int spawnerAmount;
     [SerializeField] private int spawnersDone;
 
@@ -31,18 +31,19 @@ public class RoomController : MonoBehaviour
     }
     private void RoomActivation()
     {
-        roomActive = true;
-        CloseDoors();
-        spawner1.GetComponent<EnemySpawner>().SpawnerActivate();
-        spawner2.GetComponent<EnemySpawner>().SpawnerActivate();
-        spawner3.GetComponent<EnemySpawner>().SpawnerActivate();
-        spawner4.GetComponent<EnemySpawner>().SpawnerActivate();
+        if (roomCleared == false)
+        {
+            Invoke("CloseDoors", 1f);
+            spawner1.GetComponent<EnemySpawner>().SpawnerActivate();
+            spawner2.GetComponent<EnemySpawner>().SpawnerActivate();
+            spawner3.GetComponent<EnemySpawner>().SpawnerActivate();
+            spawner4.GetComponent<EnemySpawner>().SpawnerActivate();
+        }
     }
 
     private void RoomDeactivation()
     {
-        roomActive = false;
-        OpenDoors();
+        Invoke("OpenDoors", 1f);
         spawner1.GetComponent<EnemySpawner>().SpawnerDeactivate();
         spawner2.GetComponent<EnemySpawner>().SpawnerDeactivate();
         spawner3.GetComponent<EnemySpawner>().SpawnerDeactivate();
@@ -51,20 +52,33 @@ public class RoomController : MonoBehaviour
 
     private void CloseDoors()
     {
-        door1.SetActive(true);
-        door2.SetActive(true);
+        if (door1 != null)
+        {
+            door1.SetActive(true);
+        }
+        if (door2 != null)
+        {
+            door2.SetActive(true);
+        }
     }
 
     private void OpenDoors()
     {
-        door1.SetActive(false);
-        door2.SetActive(false);
+        if (door1 != null)
+        {
+            door1.SetActive(false);
+        }
+        if (door2 != null)
+        {
+            door2.SetActive(false);
+        }
     }
     public void OneSpawnerDone()
     {
         spawnersDone = spawnersDone + 1;
         if (spawnersDone == spawnerAmount)
         {
+            roomCleared = true;
             RoomDeactivation();
         }
     }

@@ -7,8 +7,11 @@ public class EnemyAi : MonoBehaviour
 {
     public float enemyMaxHealth = 5; 
     public float enemyHealth = 1;
+    [SerializeField] private bool spawnedFromSpawner;
+    [SerializeField] private bool isMiniBoss;
     //1 = sword(yellow), 2 = Archer (green), 3 = Tank (red), 4 = Mage (blue),
     public int numberEnemyClass;
+    private float randomClassNumber;
     //Movment/AI variables
     [SerializeField] private NavMeshAgent agent;
     [SerializeField] private Transform player;
@@ -51,9 +54,12 @@ public class EnemyAi : MonoBehaviour
 
     private void Awake()
     {
-        DeterminEnemyClass();
+        DeterminClass();
+        SetEnemyClass();
         enemyHealth = enemyMaxHealth;
         currentPatrolTarget = 1;
+        alreadyAttacked = true;
+        Invoke("ResetAttack", 1f);
         player = GameObject.Find("PlayerArmature").transform;
         agent = GetComponent<NavMeshAgent>();
         InvokeRepeating("PlayerBehindWallCheck", 0.5f, 0.5f);
@@ -109,17 +115,19 @@ public class EnemyAi : MonoBehaviour
         }
     }
     private void RunAround()
-
     {
-        if (!walkPointSet) SearchWalkPoint();
-        if (walkPointSet)
-            agent.SetDestination(walkPoint);
+        if (!isMiniBoss)
+        {
+            if (!walkPointSet) SearchWalkPoint();
+            if (walkPointSet)
+                agent.SetDestination(walkPoint);
 
-        Vector3 distanceToWalkPoint = transform.position - walkPoint;
+            Vector3 distanceToWalkPoint = transform.position - walkPoint;
 
-        //Walkpoint reached
-        if (distanceToWalkPoint.magnitude < 1f)
-            walkPointSet = false;
+            //Walkpoint reached
+            if (distanceToWalkPoint.magnitude < 1f)
+                walkPointSet = false;
+        }
     }
     private void SearchWalkPoint()
     {
@@ -230,12 +238,12 @@ public class EnemyAi : MonoBehaviour
     {
         if (enemyHealth <= 0)
         {
-            int ammoDropChance = (Random.Range(1, 3));
+            int ammoDropChance = (Random.Range(1, 4));
             if (ammoDropChance == 1)
             {
                 Instantiate(pfAmmoCrate, transform.position, Quaternion.identity);
             }
-            int healthDropChance = (Random.Range(1, 3));
+            int healthDropChance = (Random.Range(1, 4));
             if (healthDropChance == 1)
             {
                 Instantiate(pfHealthOrb, transform.position, Quaternion.identity);
@@ -245,55 +253,142 @@ public class EnemyAi : MonoBehaviour
         }
     }
 
-    private void DeterminEnemyClass()
+    private void SetEnemyClass()
     {
-        if (numberEnemyClass != 1 && numberEnemyClass != 2 && numberEnemyClass != 3 && numberEnemyClass != 4)
-        {
-            float rand = Random.value;
-            if(rand <= 0.25)
-            {
-                numberEnemyClass = 1;
-            }
-            else if (rand <= 0.5 && rand > 0.25)
-            {
-                numberEnemyClass = 2;
-            }
-            else if (rand <= 0.75 && rand > 0.5)
-            {
-                numberEnemyClass = 3;
-            }
-            else if (rand > 0.75)
-            {
-                numberEnemyClass = 4;
-            }
-        }
             switch (numberEnemyClass)
             {
                 case (1):
                     gameObject.GetComponent<Renderer>().material.color = Color.yellow;
-                    swordTimeBetweenAttacks = 5;
+                    swordTimeBetweenAttacks = 2;
                     attackRange = 3;
-                    sightRange = 6;
+                    sightRange = 14;
+                    if (!isMiniBoss) enemyMaxHealth = 6;
                     break;
                 case (2):
                     gameObject.GetComponent<Renderer>().material.color = Color.green;
-                    archerTimeBetweenAttacks = 5;
-                    attackRange = 5;
-                    sightRange = 12;
-                    break;
+                    archerTimeBetweenAttacks = 4;
+                    attackRange = 8;
+                    sightRange = 20;
+                    if (!isMiniBoss) enemyMaxHealth = 3;
+                break;
                 case (3):
                     gameObject.GetComponent<Renderer>().material.color = Color.red;
-                    tankTimeBetweenAttacks = 5;
+                    tankTimeBetweenAttacks = 3;
                     attackRange = 2;
-                    sightRange = 6;
-                    break;
+                    sightRange = 12;
+                    if (!isMiniBoss) enemyMaxHealth = 10;
+                break;
                 case (4):
                     gameObject.GetComponent<Renderer>().material.color = Color.blue;
                     mageTimeBetweenAttacks = 5;
-                    attackRange = 6;
-                    sightRange = 10;
+                    attackRange = 9;
+                    sightRange = 16;
+                    if (!isMiniBoss) enemyMaxHealth = 5;
+                break;
+            }
+    }
+
+    private void DeterminClass()
+    {
+        if (spawnedFromSpawner)
+        {
+            int spawnableClasses = GetComponentInParent<EnemySpawner>().spawnableClasses;
+            float determinClass = Random.value;
+            Debug.Log(determinClass);
+            switch (spawnableClasses)
+            {
+                case (0):
+                    if(determinClass <= 0.25f) numberEnemyClass = 1; 
+                    else
+                    if (determinClass <= 0.5f) numberEnemyClass = 2;
+                    else
+                    if (determinClass <= 0.75f) numberEnemyClass = 3;
+                    else
+                    if (determinClass <= 1f) numberEnemyClass = 4;
+                        break;
+                case (1):
+                    if (GetComponentInParent<EnemySpawner>().canSpawnSword) numberEnemyClass = 1;
+                    else
+                    if (GetComponentInParent<EnemySpawner>().canSpawnArcher) numberEnemyClass = 2;
+                    else
+                    if (GetComponentInParent<EnemySpawner>().canSpawnTank) numberEnemyClass = 3;
+                    else
+                    if (GetComponentInParent<EnemySpawner>().canSpawnMage) numberEnemyClass = 4;
+                    break;
+                case (2):
+                    int classOne = 0;
+                    if (GetComponentInParent<EnemySpawner>().canSpawnSword) classOne = 1;
+                    if (GetComponentInParent<EnemySpawner>().canSpawnArcher && classOne == 0) classOne = 2;
+                    if (GetComponentInParent<EnemySpawner>().canSpawnTank && classOne == 0) classOne = 3;
+                    int classTwo = 0;
+                    if (GetComponentInParent<EnemySpawner>().canSpawnArcher && classOne != 2) classTwo = 2;
+                    if (GetComponentInParent<EnemySpawner>().canSpawnTank && classOne != 3 && classTwo == 0) classTwo = 3;
+                    if (GetComponentInParent<EnemySpawner>().canSpawnMage && classTwo == 0) classTwo = 4;
+                    if (determinClass <= 0.5f) numberEnemyClass = classOne;
+                    else numberEnemyClass = classTwo;
+                    break;
+                case (3):
+                    int klasseEins = 0;
+                    if (GetComponentInParent<EnemySpawner>().canSpawnSword) klasseEins = 1;
+                    if (GetComponentInParent<EnemySpawner>().canSpawnArcher && klasseEins == 0) klasseEins = 2;
+                    int klasseZwei = 0;
+                    if (GetComponentInParent<EnemySpawner>().canSpawnArcher && klasseEins != 2) klasseZwei = 2;
+                    if (GetComponentInParent<EnemySpawner>().canSpawnTank && klasseZwei == 0) klasseZwei = 3;
+                    int klasseDrei = 0;
+                    if (GetComponentInParent<EnemySpawner>().canSpawnTank && klasseZwei != 3) klasseDrei = 3;
+                    if (GetComponentInParent<EnemySpawner>().canSpawnMage && klasseDrei == 0) klasseDrei = 4;
+                    if (determinClass <= 0.33f) numberEnemyClass = klasseEins;
+                    if (determinClass <= 0.66f && determinClass > 0.33f) numberEnemyClass = klasseZwei;
+                    if (determinClass <= 1f && determinClass > 0.66f) numberEnemyClass = klasseDrei;
+                    break;
+                case (4):
+                    if (determinClass <= 0.25f) numberEnemyClass = 1;
+                    if (determinClass <= 0.5f && determinClass > 0.25f) numberEnemyClass = 2;
+                    if (determinClass <= 0.75f && determinClass > 0.5f) numberEnemyClass = 3;
+                    if (determinClass <= 1f && determinClass > 0.75f) numberEnemyClass = 4;
                     break;
             }
+            if (determinClass <= randomClassNumber)
+            {
+                if (GetComponentInParent<EnemySpawner>().canSpawnSword) numberEnemyClass = 1;
+                else
+                    if (GetComponentInParent<EnemySpawner>().canSpawnArcher) numberEnemyClass = 2;
+                else
+                    if (GetComponentInParent<EnemySpawner>().canSpawnTank) numberEnemyClass = 3;
+                else
+                    if (GetComponentInParent<EnemySpawner>().canSpawnMage) numberEnemyClass = 4;
+            }
+            else if (determinClass <= randomClassNumber * 2 && determinClass > randomClassNumber)
+            {
+                if (GetComponentInParent<EnemySpawner>().canSpawnArcher) numberEnemyClass = 2;
+                else
+                    if (GetComponentInParent<EnemySpawner>().canSpawnTank) numberEnemyClass = 3;
+                else
+                    if (GetComponentInParent<EnemySpawner>().canSpawnMage) numberEnemyClass = 4;
+                else
+                          if (GetComponentInParent<EnemySpawner>().canSpawnSword) numberEnemyClass = 1;
+            }
+            else if (determinClass <= randomClassNumber * 3 && determinClass > randomClassNumber * 2)
+            {
+                if (GetComponentInParent<EnemySpawner>().canSpawnTank) numberEnemyClass = 3;
+                else
+      if (GetComponentInParent<EnemySpawner>().canSpawnMage) numberEnemyClass = 4;
+                else
+            if (GetComponentInParent<EnemySpawner>().canSpawnSword) numberEnemyClass = 1;
+                else
+                    if (GetComponentInParent<EnemySpawner>().canSpawnArcher) numberEnemyClass = 2;
+            }
+            else if (determinClass <= randomClassNumber * 4 && determinClass > randomClassNumber * 3)
+            {
+                if (GetComponentInParent<EnemySpawner>().canSpawnMage) numberEnemyClass = 4;
+                else
+          if (GetComponentInParent<EnemySpawner>().canSpawnSword) numberEnemyClass = 1;
+                else
+                  if (GetComponentInParent<EnemySpawner>().canSpawnArcher) numberEnemyClass = 2;
+                else
+                    if (GetComponentInParent<EnemySpawner>().canSpawnTank) numberEnemyClass = 3;
+            }
+        }
     }
 
     private void OnDrawGizmosSelected()

@@ -39,7 +39,7 @@ public class EnemyAttacks : MonoBehaviour
                 transform.LookAt(targetPosition);
                 transform.Rotate(90, 0, 0, Space.Self);
                 Vector3 flyTowards = (targetPosition - transform.position).normalized;
-                gameObject.GetComponent<Rigidbody>().AddForce(flyTowards * 15f, ForceMode.Impulse);
+                gameObject.GetComponent<Rigidbody>().AddForce(flyTowards * 20f, ForceMode.Impulse);
                 break;
             case (3):
                 transform.LookAt(targetPosition);
@@ -72,7 +72,7 @@ public class EnemyAttacks : MonoBehaviour
     //effect of the Attack
     private void OnTriggerEnter(Collider col)
     {
-        if(attackOfClass == 2 || attackOfClass == 4 && col.tag != "Attack")
+        if(attackOfClass == 2 && col.tag != "Attack" && col.tag != "Room" || attackOfClass == 4 && col.tag != "Attack" && col.tag != "Room")
         {
             if(attackOfClass == 4)
             {

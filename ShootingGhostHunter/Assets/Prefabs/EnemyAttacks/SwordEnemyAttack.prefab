@@ -112,8 +112,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   attackOfClass: 1
-  swordAttackDuration: 1
-  swordAttackDamage: 3
+  swordAttackDuration: 0.5
+  swordAttackDamage: 10
   archerMoveSpeedAttack: 0
   archerAttackDamage: 0
   tankAttackDuration: 0

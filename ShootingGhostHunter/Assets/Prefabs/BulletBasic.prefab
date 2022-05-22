@@ -112,7 +112,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   attackType: 1
-  targetPosition: {x: -75, y: 0.88535047, z: -21.369587}
+  targetPosition: {x: -38.241, y: 0.7074996, z: -80.70548}
   player: {fileID: 0}
   vfxHitRed: {fileID: 6127303160988738261, guid: 72b9458041e987842a8dcfb7040bf292,
     type: 3}
@@ -120,8 +120,8 @@ MonoBehaviour:
     type: 3}
   moveSpeed: 50
   lastPosition: {x: 0, y: 0, z: 0}
-  rangedDamage: 1
-  rangedUltDamage: 4
+  rangedDamage: 2
+  rangedUltDamage: 5
   rangedUltAttackTime: 2.5
   meleeAttackTime: 0.5
   meleeUltAttackTime: 1

@@ -5,8 +5,16 @@ using UnityEngine;
 public class EnemySpawner : MonoBehaviour
 {
     public Transform enemyPF;
+
+    public bool canSpawnSword;
+    public bool canSpawnArcher;
+    public bool canSpawnTank;
+    public bool canSpawnMage;
+    public int spawnableClasses;
+
     [SerializeField] private int spawnAmount = 10;
     [SerializeField] private int spawnDelay = 3;
+    [SerializeField] private int spawnStartDelay = 1;
 
     [SerializeField] private int maxSpawnAmount;
     [SerializeField] private int enemysKilled;
@@ -14,6 +22,7 @@ public class EnemySpawner : MonoBehaviour
 
     private void Awake()
     {
+        DeterminSpawnableClasses();
         if(spawnAmount == 0)
         {
             spawnAmount = Random.Range(1, 6);
@@ -31,7 +40,7 @@ public class EnemySpawner : MonoBehaviour
     }
     public void SpawnerActivate()
     {
-        Invoke("Spawn", spawnDelay);
+        Invoke("Spawn", 1f);
     }
     public void SpawnerDeactivate()
     {
@@ -49,5 +58,12 @@ public class EnemySpawner : MonoBehaviour
             GetComponentInParent<RoomController>().OneSpawnerDone();
             spawnerDone = false;
         }
+    }
+    private void DeterminSpawnableClasses()
+    {
+        if (canSpawnSword) spawnableClasses = spawnableClasses + 1;
+        if (canSpawnArcher) spawnableClasses = spawnableClasses + 1;
+        if (canSpawnTank) spawnableClasses = spawnableClasses + 1;
+        if (canSpawnMage) spawnableClasses = spawnableClasses + 1;
     }
 }
