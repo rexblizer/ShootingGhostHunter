@@ -24,6 +24,11 @@ public class EnemyAi : MonoBehaviour
     [SerializeField] private Transform pfAmmoCrate;
     [SerializeField] private Transform pfHealthOrb;
 
+    [SerializeField] private GameObject geometrySword;
+    [SerializeField] private GameObject geometryArcher;
+    [SerializeField] private GameObject geometryTank;
+    [SerializeField] private GameObject geometryMage;
+
     //Walking Around Randomly
     private Vector3 walkPoint;
     private bool walkPointSet;
@@ -40,6 +45,8 @@ public class EnemyAi : MonoBehaviour
     [SerializeField] private float tankTimeBetweenAttacks;
     [SerializeField] private float mageTimeBetweenAttacks;
     [SerializeField] private bool alreadyAttacked;
+    [SerializeField] private float raycastRange;
+    [SerializeField] private bool playerInRaycastRange;
 
     //States
     public float sightRange, attackRange;
@@ -54,6 +61,7 @@ public class EnemyAi : MonoBehaviour
 
     private void Awake()
     {
+        raycastRange = 30f;
         DeterminClass();
         SetEnemyClass();
         enemyHealth = enemyMaxHealth;
@@ -70,8 +78,15 @@ public class EnemyAi : MonoBehaviour
         DeathCheck();
         StateCheck();
     }
+
+    public void GetPlayerPosition()
+    {
+        hasSeenPlayer = true;
+        lastKnownPlayerPosition = player.position;
+    }
     public void StateCheck()
     {
+        playerInRaycastRange = Physics.CheckSphere(transform.position, raycastRange, whatIsPlayer);
         playerInSightRange = Physics.CheckSphere(transform.position, sightRange, whatIsPlayer);
         playerInAttackRange = Physics.CheckSphere(transform.position, attackRange, whatIsPlayer);
 
@@ -187,7 +202,7 @@ public class EnemyAi : MonoBehaviour
         Vector3 DestinationB = new Vector3(patrolPointB.position.x, transform.position.y, patrolPointB.position.z);
         Vector3 distanceToPatrolpointA = transform.position - DestinationA;
         Vector3 distanceToPatrolpointB = transform.position - DestinationB;
-        if (currentPatrolTarget == 1 && !playerInSightRange)
+        if (currentPatrolTarget == 1)
         {
             agent.SetDestination(DestinationA);
             if (distanceToPatrolpointA.magnitude < 1.3f)
@@ -196,7 +211,7 @@ public class EnemyAi : MonoBehaviour
             }
         }
         else
-        if (currentPatrolTarget == 2 && !playerInSightRange)
+        if (currentPatrolTarget == 2)
         {
             agent.SetDestination(DestinationB);
             if (distanceToPatrolpointB.magnitude < 1.3f)
@@ -219,18 +234,21 @@ public class EnemyAi : MonoBehaviour
     }
     public void PlayerBehindWallCheck()
     {
-        Vector3 RayDirection = new Vector3(player.transform.position.x - transform.position.x, player.transform.position.y - transform.position.y + 1, player.transform.position.z - transform.position.z);
-        if (Physics.Raycast(transform.position, RayDirection, out RaycastHit hitInfo, 999f))
+        if (playerInRaycastRange)
         {
-            if (hitInfo.transform.tag == "Player")
+            Vector3 RayDirection = new Vector3(player.transform.position.x - transform.position.x, player.transform.position.y - transform.position.y + 1, player.transform.position.z - transform.position.z);
+            if (Physics.Raycast(transform.position, RayDirection, out RaycastHit hitInfo, 999f))
             {
-                //Debug.DrawRay(transform.position, RayDirection, Color.green, 99f);
-                playerBehindWall = false;
-            }
-            else
-            {
-                //Debug.DrawRay(transform.position, RayDirection, Color.red, 99f);
-                playerBehindWall = true;
+                if (hitInfo.transform.tag == "Player")
+                {
+                    Debug.DrawRay(transform.position, RayDirection, Color.green, 99f);
+                    playerBehindWall = false;
+                }
+                else
+                {
+                    Debug.DrawRay(transform.position, RayDirection, Color.red, 99f);
+                    playerBehindWall = true;
+                }
             }
         }
     }
@@ -258,28 +276,28 @@ public class EnemyAi : MonoBehaviour
             switch (numberEnemyClass)
             {
                 case (1):
-                    gameObject.GetComponent<Renderer>().material.color = Color.yellow;
+                geometrySword.SetActive(true);
                     swordTimeBetweenAttacks = 2;
                     attackRange = 3;
                     sightRange = 14;
                     if (!isMiniBoss) enemyMaxHealth = 6;
                     break;
                 case (2):
-                    gameObject.GetComponent<Renderer>().material.color = Color.green;
-                    archerTimeBetweenAttacks = 4;
+                geometryArcher.SetActive(true);
+                archerTimeBetweenAttacks = 4;
                     attackRange = 8;
                     sightRange = 20;
                     if (!isMiniBoss) enemyMaxHealth = 3;
                 break;
                 case (3):
-                    gameObject.GetComponent<Renderer>().material.color = Color.red;
+                geometryTank.SetActive(true);
                     tankTimeBetweenAttacks = 3;
                     attackRange = 2;
                     sightRange = 12;
                     if (!isMiniBoss) enemyMaxHealth = 10;
                 break;
                 case (4):
-                    gameObject.GetComponent<Renderer>().material.color = Color.blue;
+                geometryMage.SetActive(true);
                     mageTimeBetweenAttacks = 5;
                     attackRange = 9;
                     sightRange = 16;
@@ -294,7 +312,7 @@ public class EnemyAi : MonoBehaviour
         {
             int spawnableClasses = GetComponentInParent<EnemySpawner>().spawnableClasses;
             float determinClass = Random.value;
-            Debug.Log(determinClass);
+            //Debug.Log(determinClass);
             switch (spawnableClasses)
             {
                 case (0):
@@ -401,6 +419,9 @@ public class EnemyAi : MonoBehaviour
         Gizmos.color = Color.yellow;
 
         Gizmos.DrawWireSphere(transform.position, sightRange);
+        Gizmos.color = Color.green;
+
+        Gizmos.DrawWireSphere(transform.position, raycastRange);
     }
 
     private void AttackSword()

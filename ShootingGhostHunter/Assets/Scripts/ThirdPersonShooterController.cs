@@ -4,9 +4,15 @@ using UnityEngine;
 using StarterAssets;
 using UnityEngine.InputSystem;
 using TMPro;
+using UnityEngine.Events;
+using UnityEngine.SceneManagement;
 
 public class ThirdPersonShooterController : MonoBehaviour
 {
+    [SerializeField] UnityEvent PauseMenuButtonPressed;
+    [SerializeField] private GameObject swordGeometry;
+    [SerializeField] UnityEvent OnDeath;
+    private PlayerInput playerInput;
     [SerializeField] private LayerMask aimColliderLayerMask = new LayerMask();
     [SerializeField] private Transform debugTransform;
     [SerializeField] private Transform pfRangedBasic;
@@ -48,14 +54,31 @@ public class ThirdPersonShooterController : MonoBehaviour
 
     private void Awake()
     {
+        playerInput = GetComponent<PlayerInput>();
         uiController.SetHealthBarMaxHealth(maxHealth);
         //thirdPersonController = GetComponent<ThirdPersonController>();
         starterAssetsInputs = GetComponent<StarterAssetsInputs>();
     }
     void Update()
     {
+        if (playerInput.currentActionMap.name == "Player")
+        {
+            playerInput.currentActionMap.FindAction("PauseMenu").performed += context => PauseMenuButtonPressed.Invoke();
+        }
+        if (!PlayerStatus.hasSword && !PlayerStatus.hasRangedUlt) swordGeometry.SetActive(false); else swordGeometry.SetActive(true);
+        float healthPercent = 1.0f * healthRemaining / maxHealth;
+        if (healthPercent <= 0.25f) uiController.healthLow = true; else uiController.healthLow = false;
+        if (playerInput.currentActionMap.name == "Death")
+        {
+            playerInput.currentActionMap.FindAction("Restart").performed += contex => Restart();
+        }
+        if (healthRemaining < 0) healthRemaining = 0;
         ammoCounter.text = ammoRemaining.ToString();
         healthCounter.text = healthRemaining.ToString();
+        if (healthRemaining <= 0)
+        {
+            NoHealthRemaining();
+        }
         uiController.SetHealthBar(healthRemaining);
         Vector2 screenCenterPoint = new Vector2(Screen.width / 2f, Screen.height / 2f);
         Ray ray = Camera.main.ScreenPointToRay(screenCenterPoint);
@@ -69,21 +92,15 @@ public class ThirdPersonShooterController : MonoBehaviour
         if (starterAssetsInputs.shoot)
         {
             starterAssetsInputs.shoot = false;
-
-            if (rangedBasicAvailable && ammoRemaining > 0)
-            {
-                ammoRemaining = ammoRemaining - 1;
-                rangedBasicAvailable = false;
-                pfRangedBasic.GetComponent<PlayerAttacks>().Setup(mouseWorldPosition);
-                Vector3 aimDir = (mouseWorldPosition - spawnBulletPosition.position).normalized;
-                Instantiate(pfRangedBasic, spawnBulletPosition.position, Quaternion.LookRotation(aimDir, Vector3.up));
-                Invoke("RangedBasicReset", rangedBasicCooldown);
-            }
+                if (rangedBasicAvailable && ammoRemaining > 0)
+                {
+                    StartCoroutine(Shoot());
+                }
         }
         if (starterAssetsInputs.melee)
         {
             starterAssetsInputs.melee = false;
-            if (meleeBasicAvailable)
+            if (meleeBasicAvailable && PlayerStatus.hasSword)
             {
                 meleeBasicAvailable = false;
                 Vector3 aimDir = (mouseWorldPosition - spawnMeleePosition.position).normalized;
@@ -94,28 +111,61 @@ public class ThirdPersonShooterController : MonoBehaviour
         if (starterAssetsInputs.meleeUlt)
         {
             starterAssetsInputs.meleeUlt = false;
-            if (meleeUltAvailable)
+            if (PlayerStatus.hasMeleeUlt)
             {
-                meleeUltAvailable = false;
-                uiController.StartMeleeUltCD(meleeUltCooldown);
-                Vector3 meleeUltSpawnPosition = new Vector3(gameObject.transform.position.x, gameObject.transform.position.y + 1, gameObject.transform.position.z);
-                Instantiate(pfMeleeUlt, meleeUltSpawnPosition, Quaternion.identity);
-                Invoke("MeleeUltReset", meleeUltCooldown);
+                if (meleeUltAvailable)
+                {
+                    meleeUltAvailable = false;
+                    uiController.StartMeleeUltCD(meleeUltCooldown);
+                    Vector3 meleeUltSpawnPosition = new Vector3(gameObject.transform.position.x, gameObject.transform.position.y + 1, gameObject.transform.position.z);
+                    Instantiate(pfMeleeUlt, meleeUltSpawnPosition, Quaternion.identity);
+                    Invoke("MeleeUltReset", meleeUltCooldown);
+                }
             }
         }
         if (starterAssetsInputs.shootUlt)
         {
             starterAssetsInputs.shootUlt = false;
-            if (rangedUltAvailable)
+            if (PlayerStatus.hasRangedUlt)
             {
-                rangedUltAvailable = false;
-                uiController.StartRangedUltCD(rangedUltCooldown);
-                LookAtMouseWorldPosition();
-                pfRangedUlt.GetComponent<PlayerAttacks>().Setup(mouseWorldPosition);
-                Instantiate(pfRangedUlt, spawnRangedUltPosition.position, Quaternion.identity);
-                Invoke("RangedUltReset", rangedUltCooldown);
+                if (rangedUltAvailable)
+                {
+                    rangedUltAvailable = false;
+                    uiController.StartRangedUltCD(rangedUltCooldown);
+                    LookAtMouseWorldPosition();
+                    pfRangedUlt.GetComponent<PlayerAttacks>().Setup(mouseWorldPosition);
+                    Instantiate(pfRangedUlt, spawnRangedUltPosition.position, Quaternion.identity);
+                    Invoke("RangedUltReset", rangedUltCooldown);
+                }
             }
         }
+    }
+ 
+    IEnumerator Shoot()
+    {
+        Vector3 aimDir = (mouseWorldPosition - spawnBulletPosition.position).normalized;
+        ammoRemaining = ammoRemaining - 1;
+        rangedBasicAvailable = false;
+        pfRangedBasic.GetComponent<PlayerAttacks>().Setup(mouseWorldPosition);
+        yield return new WaitForSecondsRealtime(0.1f);
+        Instantiate(pfRangedBasic, spawnBulletPosition.position, Quaternion.LookRotation(aimDir, Vector3.up));
+        Invoke("RangedBasicReset", rangedBasicCooldown);
+        StopCoroutine(Shoot());
+        yield return null;
+    }
+
+    private void NoHealthRemaining()
+    {
+        playerInput.SwitchCurrentActionMap("Death");
+        OnDeath.Invoke();
+    }
+
+    private void Restart()
+    {
+        PlayerStatus.hasSword = false;
+        PlayerStatus.hasMeleeUlt = false;
+        PlayerStatus.hasRangedUlt = false;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
     private void LookAtMouseWorldPosition()
     {
@@ -141,7 +191,7 @@ public class ThirdPersonShooterController : MonoBehaviour
     public void AmmoIncrease()
     {
         ammoRemaining = ammoRemaining + ammoIncreasePerCrate;
-        Debug.Log(ammoRemaining);
+        //Debug.Log(ammoRemaining);
         if(ammoRemaining > maxAmmo)
         {
             ammoRemaining = maxAmmo;
@@ -150,7 +200,7 @@ public class ThirdPersonShooterController : MonoBehaviour
     public void HealthIncrease()
     {
         healthRemaining = healthRemaining + healthIncreasePerOrb;
-        Debug.Log(healthRemaining);
+        //Debug.Log(healthRemaining);
         if (healthRemaining > maxHealth)
         {
             healthRemaining = maxHealth;

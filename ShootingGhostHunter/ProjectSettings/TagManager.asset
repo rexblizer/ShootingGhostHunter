@@ -10,6 +10,7 @@ TagManager:
   - Health
   - Attack
   - Room
+  - Upgrade
   layers:
   - Default
   - TransparentFX

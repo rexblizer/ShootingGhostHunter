@@ -98,6 +98,7 @@ public class PlayerAttacks : MonoBehaviour
                     Instantiate(vfxHitRed, lastPosition, Quaternion.identity);
                     col.gameObject.GetComponent<Rigidbody>().AddForce(pushDirection * 2f, ForceMode.Impulse);
                     col.GetComponent<EnemyAi>().enemyHealth = col.GetComponent<EnemyAi>().enemyHealth - rangedDamage;
+                    col.GetComponent<EnemyAi>().GetPlayerPosition();
                 }
                 break;
             case (2):
@@ -112,6 +113,7 @@ public class PlayerAttacks : MonoBehaviour
                 {
                     col.GetComponent<EnemyAi>().enemyHealth = col.GetComponent<EnemyAi>().enemyHealth - meleeUltDamage;
                     col.gameObject.GetComponent<Rigidbody>().AddForce(pushDirection * 6, ForceMode.Impulse);
+                    col.GetComponent<EnemyAi>().GetPlayerPosition();
                 }
                 break;
             case (4):

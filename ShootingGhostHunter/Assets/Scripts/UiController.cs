@@ -6,22 +6,49 @@ using TMPro;
 
 public class UiController : MonoBehaviour
 {
+    public bool healthLow;
+    [SerializeField] private GameObject outline;
+
     public Slider healthBarSlider;
     public Gradient healthBarGradient;
     public Image healthBarFill;
     public Image healthBarHeart;
 
+    [SerializeField] private GameObject rangedUltCooldown;
     public Image rangedCDFill;
     private float rangedCD;
     private bool rangedUltCoolingDown;
     [SerializeField] private int rangedCooldownDisplay;
     [SerializeField] private TMP_Text rangedCooldownCounter;
 
+    [SerializeField] private GameObject meleeUltCooldown;
     public Image meleeCDFill;
     private float meleeCD;
     private bool meleeUltCoolingDown;
     [SerializeField] private int meleeCooldownDisplay;
     [SerializeField] private TMP_Text meleeCooldownCounter;
+
+    [SerializeField] private GameObject ammoCounter;
+
+    [SerializeField] private TMP_Text deathText;
+
+    private void Update()
+    {
+        if (!PlayerStatus.hasMeleeUlt) meleeUltCooldown.SetActive(false);
+        else meleeUltCooldown.SetActive(true);
+        if (!PlayerStatus.hasRangedUlt) rangedUltCooldown.SetActive(false);
+        else rangedUltCooldown.SetActive(true);
+        if (healthLow) outline.SetActive(true); else outline.SetActive(false);
+        if(rangedUltCoolingDown == true)
+        {
+            rangedCDFill.fillAmount -= 1.0f / rangedCD * Time.deltaTime;
+        }
+        if (meleeUltCoolingDown == true)
+        {
+            meleeCDFill.fillAmount -= 1.0f / meleeCD * Time.deltaTime;
+        }
+    }
+
     public void SetHealthBar(int health)
     {
         healthBarSlider.value = health;
@@ -55,17 +82,6 @@ public class UiController : MonoBehaviour
         rangedCD = CD;
         rangedUltCoolingDown = true;
     }
-    private void Update()
-    {
-        if(rangedUltCoolingDown == true)
-        {
-            rangedCDFill.fillAmount -= 1.0f / rangedCD * Time.deltaTime;
-        }
-        if (meleeUltCoolingDown == true)
-        {
-            meleeCDFill.fillAmount -= 1.0f / meleeCD * Time.deltaTime;
-        }
-    }
 
     private void ReduceRangedCooldown()
     {
@@ -93,5 +109,10 @@ public class UiController : MonoBehaviour
         {
             meleeCooldownCounter.text = "";
         }
+    }
+
+    public void DeathTextActivate()
+    {
+        deathText.text = "You died a horrific and brutal death! Press R to try again";
     }
 }
